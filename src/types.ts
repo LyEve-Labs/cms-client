@@ -14,12 +14,12 @@ export interface Schema {
 	with_soft_delete?: boolean;
 	/** Whether to support per-row localization. */
 	with_localization?: boolean;
-	/** Canvas position - stored client-side in localStorage. */
+	/** Canvas position : stored client-side in localStorage. */
 	_pos?: { x: number; y: number };
 }
 
 export interface SchemaField {
-	/** Client-side stable id for drag-and-drop - not sent to the server. */
+	/** Client-side stable id for drag-and-drop : not sent to the server. */
 	id?: string;
 	name: string;
 	field_type: FieldType;
@@ -34,7 +34,7 @@ export interface SchemaField {
 	relation_through?: string;
 	/** Override the auto-generated FK column name (belongs_to only). */
 	relation_fk_name?: string;
-	/** Set by the server - these fields cannot be edited or removed in the UI. */
+	/** Set by the server : these fields cannot be edited or removed in the UI. */
 	system?: boolean;
 }
 
@@ -209,7 +209,7 @@ export interface OAuthProvider {
 	id: string;
 	name: string;
 	client_id: string;
-	/** Not returned by the server - only sent on create/update. */
+	/** Not returned by the server : only sent on create/update. */
 	client_secret?: string;
 	issuer_url: string;
 	scopes: string[];
@@ -232,7 +232,7 @@ export interface Permission {
 }
 
 /**
- * License entitlement snapshot - mirrors the Go `license.Snapshot` returned by
+ * License entitlement snapshot : mirrors the Go `license.Snapshot` returned by
  * GET /api/admin/entitlements. Drives free-tier UI gating and upgrade prompts.
  */
 export interface Entitlements {

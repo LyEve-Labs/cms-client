@@ -65,7 +65,7 @@ async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
  * 2. If the request threw a network/abort error and `retryOnNetworkError` is true,
  *    retry.
  * 3. Exponential backoff with full jitter.
- * 4. Respects AbortSignal - aborts cancel the current attempt and skip remaining
+ * 4. Respects AbortSignal : aborts cancel the current attempt and skip remaining
  *    retries.
  */
 export function createRetryFetch(
