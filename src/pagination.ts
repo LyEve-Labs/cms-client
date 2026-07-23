@@ -25,17 +25,17 @@
 
 /** Response shape from a cursor-paginated endpoint. */
 export interface CursorPage<T> {
-	items: T[];
-	/** Present when more pages are available. */
-	next_cursor?: string;
+  items: T[];
+  /** Present when more pages are available. */
+  next_cursor?: string;
 }
 
 /** Function that fetches a single cursor page. */
 export type PageFetcher<T> = (cursor?: string) => Promise<CursorPage<T>>;
 
 export interface PaginationConfig<T> {
-	/** Function that fetches a single cursor page. */
-	fetchPage: PageFetcher<T>;
+  /** Function that fetches a single cursor page. */
+  fetchPage: PageFetcher<T>;
 }
 
 /**
@@ -46,117 +46,117 @@ export interface PaginationConfig<T> {
  * integration.
  */
 export class PaginationIterator<T> implements AsyncIterableIterator<T> {
-	#fetchPage: PageFetcher<T>;
-	#signal?: AbortSignal;
+  #fetchPage: PageFetcher<T>;
+  #signal?: AbortSignal;
 
-	// Internal paging state
-	#buffer: T[] = [];
-	#cursor: string | undefined = undefined;
-	#exhausted = false;
-	#fetching: Promise<void> | null = null;
+  // Internal paging state
+  #buffer: T[] = [];
+  #cursor: string | undefined = undefined;
+  #exhausted = false;
+  #fetching: Promise<void> | null = null;
 
-	constructor(config: PaginationConfig<T>) {
-		this.#fetchPage = config.fetchPage;
-	}
+  constructor(config: PaginationConfig<T>) {
+    this.#fetchPage = config.fetchPage;
+  }
 
-	/**
-	 * Return a new iterator sharing the same underlying state but with a
-	 * different AbortSignal. Useful when the signal is only known at the
-	 * call site, not at construction time.
-	 */
-	withSignal(signal: AbortSignal): PaginationIterator<T> {
-		const clone = new PaginationIterator<T>({
-			fetchPage: this.#fetchPage,
-		});
-		clone.#signal = signal;
-		clone.#buffer = this.#buffer;
-		clone.#cursor = this.#cursor;
-		clone.#exhausted = this.#exhausted;
-		clone.#fetching = this.#fetching;
-		return clone;
-	}
+  /**
+   * Return a new iterator sharing the same underlying state but with a
+   * different AbortSignal. Useful when the signal is only known at the
+   * call site, not at construction time.
+   */
+  withSignal(signal: AbortSignal): PaginationIterator<T> {
+    const clone = new PaginationIterator<T>({
+      fetchPage: this.#fetchPage,
+    });
+    clone.#signal = signal;
+    clone.#buffer = this.#buffer;
+    clone.#cursor = this.#cursor;
+    clone.#exhausted = this.#exhausted;
+    clone.#fetching = this.#fetching;
+    return clone;
+  }
 
-	// AsyncIterator protocol
+  // AsyncIterator protocol
 
-	[Symbol.asyncIterator](): AsyncIterableIterator<T> {
-		return this;
-	}
+  [Symbol.asyncIterator](): AsyncIterableIterator<T> {
+    return this;
+  }
 
-	async next(): Promise<IteratorResult<T>> {
-		this.#throwIfAborted();
+  async next(): Promise<IteratorResult<T>> {
+    this.#throwIfAborted();
 
-		// Yield from buffer if we have cached records
-		if (this.#buffer.length > 0) {
-			const value = this.#buffer.shift()!;
-			return { value, done: false };
-		}
+    // Yield from buffer if we have cached records
+    if (this.#buffer.length > 0) {
+      const value = this.#buffer.shift()!;
+      return { value, done: false };
+    }
 
-		// Done if exhausted
-		if (this.#exhausted) {
-			return { value: undefined, done: true };
-		}
+    // Done if exhausted
+    if (this.#exhausted) {
+      return { value: undefined, done: true };
+    }
 
-		// Fetch next page
-		try {
-			await this.#fetchPageInternal();
-		} catch (err) {
-			if (err instanceof Error) throw err;
-			throw new Error(String(err));
-		}
+    // Fetch next page
+    try {
+      await this.#fetchPageInternal();
+    } catch (err) {
+      if (err instanceof Error) throw err;
+      throw new Error(String(err));
+    }
 
-		if (this.#buffer.length > 0) {
-			const value = this.#buffer.shift()!;
-			return { value, done: false };
-		}
+    if (this.#buffer.length > 0) {
+      const value = this.#buffer.shift()!;
+      return { value, done: false };
+    }
 
-		return { value: undefined, done: true };
-	}
+    return { value: undefined, done: true };
+  }
 
-	return?(value?: unknown): Promise<IteratorResult<T>> {
-		this.#exhausted = true;
-		this.#buffer.length = 0;
-		return Promise.resolve({
-			value: value as T | undefined,
-			done: true,
-		});
-	}
+  return?(value?: unknown): Promise<IteratorResult<T>> {
+    this.#exhausted = true;
+    this.#buffer.length = 0;
+    return Promise.resolve({
+      value: value as T | undefined,
+      done: true,
+    });
+  }
 
-	throw?(e?: unknown): Promise<IteratorResult<T>> {
-		this.#exhausted = true;
-		this.#buffer.length = 0;
-		return Promise.reject(e);
-	}
+  throw?(e?: unknown): Promise<IteratorResult<T>> {
+    this.#exhausted = true;
+    this.#buffer.length = 0;
+    return Promise.reject(e);
+  }
 
-	// Internal
+  // Internal
 
-	async #fetchPageInternal(): Promise<void> {
-		if (this.#fetching) {
-			await this.#fetching;
-			return;
-		}
+  async #fetchPageInternal(): Promise<void> {
+    if (this.#fetching) {
+      await this.#fetching;
+      return;
+    }
 
-		this.#throwIfAborted();
+    this.#throwIfAborted();
 
-		this.#fetching = this.#fetchPage(this.#cursor)
-			.then((page) => {
-				this.#throwIfAborted();
-				this.#buffer = [...page.items];
-				if (page.next_cursor) {
-					this.#cursor = page.next_cursor;
-				} else {
-					this.#exhausted = true;
-				}
-			})
-			.finally(() => {
-				this.#fetching = null;
-			});
+    this.#fetching = this.#fetchPage(this.#cursor)
+      .then((page) => {
+        this.#throwIfAborted();
+        this.#buffer = [...page.items];
+        if (page.next_cursor) {
+          this.#cursor = page.next_cursor;
+        } else {
+          this.#exhausted = true;
+        }
+      })
+      .finally(() => {
+        this.#fetching = null;
+      });
 
-		await this.#fetching;
-	}
+    await this.#fetching;
+  }
 
-	#throwIfAborted(): void {
-		if (this.#signal?.aborted) {
-			throw this.#signal.reason ?? new DOMException('Aborted', 'AbortError');
-		}
-	}
+  #throwIfAborted(): void {
+    if (this.#signal?.aborted) {
+      throw this.#signal.reason ?? new DOMException("Aborted", "AbortError");
+    }
+  }
 }
