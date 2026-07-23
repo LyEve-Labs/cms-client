@@ -24,72 +24,72 @@
  * ```
  */
 export class RequestDeduplicator {
-	#pending = new Map<string, Promise<unknown>>();
+  #pending = new Map<string, Promise<unknown>>();
 
-	/**
-	 * Execute `factory` once for the given key. Concurrent callers with
-	 * the same key receive the same promise. The entry is evicted after
-	 * the shared promise settles.
-	 *
-	 * @param key     - Unique request key (method + URL + stable body hash).
-	 * @param factory - The network operation to perform.
-	 * @param signal  - Optional AbortSignal. If it fires, this caller gets
-	 *                  an AbortError. The shared request continues.
-	 */
-	async dedup<T>(
-		key: string,
-		factory: () => Promise<T>,
-		signal?: AbortSignal
-	): Promise<T> {
-		const existing = this.#pending.get(key);
-		if (existing !== undefined) {
-			return this.#raceWithSignal(existing as Promise<T>, signal);
-		}
+  /**
+   * Execute `factory` once for the given key. Concurrent callers with
+   * the same key receive the same promise. The entry is evicted after
+   * the shared promise settles.
+   *
+   * @param key     - Unique request key (method + URL + stable body hash).
+   * @param factory - The network operation to perform.
+   * @param signal  - Optional AbortSignal. If it fires, this caller gets
+   *                  an AbortError. The shared request continues.
+   */
+  async dedup<T>(
+    key: string,
+    factory: () => Promise<T>,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    const existing = this.#pending.get(key);
+    if (existing !== undefined) {
+      return this.#raceWithSignal(existing as Promise<T>, signal);
+    }
 
-		const promise = factory().finally(() => {
-			this.#pending.delete(key);
-		});
-		this.#pending.set(key, promise);
+    const promise = factory().finally(() => {
+      this.#pending.delete(key);
+    });
+    this.#pending.set(key, promise);
 
-		return this.#raceWithSignal(promise, signal);
-	}
+    return this.#raceWithSignal(promise, signal);
+  }
 
-	/** How many unique requests are currently in flight. */
-	get inflight(): number {
-		return this.#pending.size;
-	}
+  /** How many unique requests are currently in flight. */
+  get inflight(): number {
+    return this.#pending.size;
+  }
 
-	/** Remove all pending deduplication entries. */
-	clear(): void {
-		this.#pending.clear();
-	}
+  /** Remove all pending deduplication entries. */
+  clear(): void {
+    this.#pending.clear();
+  }
 
-	/**
-	 * Race a promise against an AbortSignal. If the signal fires first,
-	 * the caller gets an AbortError but the promise still settles normally.
-	 */
-	#raceWithSignal<T>(p: Promise<T>, s?: AbortSignal): Promise<T> {
-		if (!s) return p;
-		if (s.aborted) {
-			return Promise.reject(
-				s.reason ?? new DOMException('Aborted', 'AbortError')
-			);
-		}
-		return new Promise<T>((resolve, reject) => {
-			const onAbort = () => {
-				reject(s.reason ?? new DOMException('Aborted', 'AbortError'));
-			};
-			s.addEventListener('abort', onAbort, { once: true });
-			p.then(
-				(v) => {
-					s.removeEventListener('abort', onAbort);
-					resolve(v);
-				},
-				(e) => {
-					s.removeEventListener('abort', onAbort);
-					reject(e);
-				}
-			);
-		});
-	}
+  /**
+   * Race a promise against an AbortSignal. If the signal fires first,
+   * the caller gets an AbortError but the promise still settles normally.
+   */
+  #raceWithSignal<T>(p: Promise<T>, s?: AbortSignal): Promise<T> {
+    if (!s) return p;
+    if (s.aborted) {
+      return Promise.reject(
+        s.reason ?? new DOMException("Aborted", "AbortError"),
+      );
+    }
+    return new Promise<T>((resolve, reject) => {
+      const onAbort = () => {
+        reject(s.reason ?? new DOMException("Aborted", "AbortError"));
+      };
+      s.addEventListener("abort", onAbort, { once: true });
+      p.then(
+        (v) => {
+          s.removeEventListener("abort", onAbort);
+          resolve(v);
+        },
+        (e) => {
+          s.removeEventListener("abort", onAbort);
+          reject(e);
+        },
+      );
+    });
+  }
 }
