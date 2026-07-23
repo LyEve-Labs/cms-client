@@ -33,7 +33,11 @@ export function createClient(
 			headers: {
 				'Content-Type': 'application/json',
 				...defaultHeaders,
-				...init?.headers,
+				...(init?.headers instanceof Headers
+					? Object.fromEntries(init.headers.entries())
+					: Array.isArray(init?.headers)
+						? Object.fromEntries(init.headers)
+						: init?.headers),
 			},
 		});
 
