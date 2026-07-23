@@ -34,6 +34,11 @@ export interface ContentQuery {
 
 /**
  * Builder for ContentQuery objects.
+ *
+ * Each field can only hold one filter (Record<string, string>). Calling
+ * where() (or whereEq/whereGt etc.) with an already-set field name
+ * overwrites the previous filter. For range queries on the same field,
+ * use the server's range filter syntax in a single call.
  */
 export class QueryBuilder {
 	#schema: string;
