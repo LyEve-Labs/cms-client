@@ -1,6 +1,6 @@
 {
   "name": "@lyeve/cms-client",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Framework-agnostic TypeScript SDK for the LyEve CMS API",
   "license": "MIT",
   "author": "LyEve Labs <hello@lyeve.com>",
