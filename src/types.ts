@@ -246,8 +246,10 @@ export interface Entitlements {
   plan: string;
   /** License state: free | active | grace | expired. */
   state: string;
-  /** Entitled feature ids (e.g. "rbac", "studio"). */
+  /** Entitled feature ids (e.g. "feature:rbac", "feature:schema_ui"). */
   features: string[];
-  /** Effective numeric caps keyed by limit name (<= 0 means no limit). */
-  limits: Record<string, number>;
+  /** License expiry (ISO 8601), null when unlicensed or perpetual. */
+  expires_at: string | null;
+  /** Full days until expiry, -1 when unlicensed or perpetual. */
+  days_remaining: number;
 }
