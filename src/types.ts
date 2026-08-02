@@ -246,7 +246,11 @@ export interface Entitlements {
   plan: string;
   /** License state: free | active | grace | expired. */
   state: string;
-  /** Entitled feature ids (e.g. "feature:rbac", "feature:schema_ui"). */
+  /**
+   * Entitled feature names, matched verbatim. These are unprefixed and
+   * kebab-case ("rbac", "schema-ui", "cache-redis"): the plugin name, or the
+   * SKU minus its "plugin-" prefix. A "feature:"-prefixed id matches nothing.
+   */
   features: string[];
   /** License expiry (ISO 8601), null when unlicensed or perpetual. */
   expires_at: string | null;
