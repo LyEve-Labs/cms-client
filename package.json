@@ -36,7 +36,7 @@
   },
   "scripts": {
     "dev": "tsup --watch",
-    "build": "tsup && publint",
+    "build": "tsup && publint && node scripts/check-dist.mjs",
     "check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
