@@ -23,7 +23,7 @@ Published with no user-facing changes; repository tooling only.
 
 ### Removed
 
-- Entitlements `limits` field removed  -  numeric feature caps are enforced server-side per the offline license model.
+- Entitlements `limits` field removed - numeric feature caps are enforced server-side per the offline license model.
 
 ## [0.1.1] - 2026-07-24
 
