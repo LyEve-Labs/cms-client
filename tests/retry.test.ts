@@ -328,21 +328,33 @@ describe("createRetryFetch - abort signal", () => {
   });
 
   it("aborts the request when the signal fires during sleep", async () => {
-    const fetchFn = sequentialFetch(503, 200);
-    const retrying = createRetryFetch(fetchFn, { maxRetries: 3 });
-    const ac = new AbortController();
+    // backoff() is full jitter: random(0, base * 2^attempt). With the default
+    // 1000ms base the first window is 0-999ms, so advancing 100ms slept through
+    // it about one run in ten and the request completed before the abort. Pin
+    // the draw so the abort lands inside the window every time.
+    const random = vi.spyOn(Math, "random").mockReturnValue(0.99);
+    try {
+      const fetchFn = sequentialFetch(503, 200);
+      const retrying = createRetryFetch(fetchFn, {
+        maxRetries: 3,
+        baseDelay: 10_000,
+      });
+      const ac = new AbortController();
 
-    const resPromise = retrying("https://api.example.com/data", {
-      signal: ac.signal,
-    });
+      const resPromise = retrying("https://api.example.com/data", {
+        signal: ac.signal,
+      });
 
-    // Advance past first fetch, the retry loop starts sleeping
-    await vi.advanceTimersByTimeAsync(100);
+      // Advance past the first fetch; the retry loop is now sleeping ~9.9s.
+      await vi.advanceTimersByTimeAsync(100);
 
-    // Abort during the backoff window
-    ac.abort();
+      // Abort during the backoff window.
+      ac.abort();
 
-    await expect(resPromise).rejects.toThrow();
+      await expect(resPromise).rejects.toThrow();
+    } finally {
+      random.mockRestore();
+    }
   });
 
   it("throws when signal is already aborted before the call", async () => {
